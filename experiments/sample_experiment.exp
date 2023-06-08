@@ -1,0 +1,8 @@
+name: test
+concentration: 0
+integration: 5
+repetitions: 20
+wavelengths:
+780
+783
+785

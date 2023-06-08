@@ -1,0 +1,124 @@
+Metadata-Version: 2.1
+Name: Instrumental-lib
+Version: 0.6.dev0
+Summary: Library with high-level drivers for lab equipment
+Home-page: https://github.com/mabuchilab/Instrumental
+Author: Nate Bogdanowicz
+Author-email: natezb@gmail.com
+License: GPLv3
+Description:     :alt: Travis CI
+        
+        .. image:: https://img.shields.io/appveyor/ci/natezb/Instrumental/master.svg
+            :target: https://ci.appveyor.com/project/natezb/instrumental
+            :alt: AppVeyor CI
+        
+        .. image:: https://img.shields.io/pypi/v/Instrumental-lib.svg
+            :target: https://pypi.python.org/pypi/Instrumental-lib
+            :alt: PyPI
+        
+        .. image:: https://readthedocs.org/projects/instrumental-lib/badge/
+           :target: https://instrumental-lib.readthedocs.io
+           :alt: Documentation
+        
+        .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2556399.svg
+           :target: https://doi.org/10.5281/zenodo.2556399
+        
+        
+        |logo| Instrumental
+        ===================
+        
+        Instrumental is a Python-based library for controlling lab hardware like cameras, DAQs,
+        oscilloscopes, spectrometers, and more. It has high-level drivers for instruments from NI,
+        Tektronix, Thorlabs, PCO, Photometrics, Burleigh, and others.
+        
+        Instrumental's goal is to make common tasks simple to perform, while still providing the
+        flexibility to perform complex tasks with relative ease. It also makes it easy to mess around with
+        instruments in the shell. For example, to list the available instruments and open one of them::
+        
+            >>> from instrumental import instrument, list_instruments
+            >>> paramsets = list_instruments()
+            >>> paramsets
+            [<ParamSet[TSI_Camera] serial='05478' number=0>,
+             <ParamSet[K10CR1] serial='55000247'>
+             <ParamSet[NIDAQ] model='USB-6221 (BNC)' name='Dev1'>]
+            >>> daq = instrument(paramsets[2])
+            >>> daq
+            <instrumental.drivers.daq.ni.NIDAQ at 0xb61...>
+        
+        If you're going to be using an instrument repeatedly, save it for later::
+        
+            >>> daq.save_instrument('myDAQ')
+        
+        Then you can simply open it by name::
+        
+            >>> daq = instrument('myDAQ')
+        
+        Instrumental also bundles in some additional support code, including:
+        
+        * Plotting and curve fitting utilities
+        * Utilities for acquiring and organizing data
+        
+        Instrumental makes use of NumPy, SciPy, Matplotlib, and Pint, a Python units
+        library. It optionally uses PyVISA/VISA and other drivers for interfacing with
+        lab equipment.
+        
+        For install information, documentation, examples, and more, see our page on
+        `ReadTheDocs <http://instrumental-lib.readthedocs.org/>`_.
+        
+        .. |logo| image:: images/logo-small.png
+                  :alt: Instrumental
+        
+        If you would like to cite Instrumental, to give it more visibility to other researchers, you can cite the repository through Zenodo (DOI: 10.5281/zenodo.2556399).
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Provides-Extra: cameras.pixelfly
+Provides-Extra: cameras.tsi
+Provides-Extra: cameras.uc480
+Provides-Extra: daq.ni
+Provides-Extra: frequencycounters.keysight
+Provides-Extra: funcgenerators.agilent
+Provides-Extra: funcgenerators.rigol
+Provides-Extra: funcgenerators.tektronix
+Provides-Extra: laserdiodecontrollers.ilx_lightwave
+Provides-Extra: laserdiodecontrollers.newport
+Provides-Extra: lasers.m2_solstis
+Provides-Extra: lockins.sr844
+Provides-Extra: lockins.sr850
+Provides-Extra: motion._kinesis.ff
+Provides-Extra: motion._kinesis.isc
+Provides-Extra: motion.apt
+Provides-Extra: motion.ecc100
+Provides-Extra: motion.filter_flipper
+Provides-Extra: motion.klinger
+Provides-Extra: motion.newmark
+Provides-Extra: motion.tdc_001
+Provides-Extra: multimeters.hp
+Provides-Extra: opticalswitch.diconopticalswitch
+Provides-Extra: powermeters.hp
+Provides-Extra: powermeters.ilx_lightwave
+Provides-Extra: powermeters.thorlabs
+Provides-Extra: powersupplies.gw_instek
+Provides-Extra: relaycontrollers.probecardinterface
+Provides-Extra: scopes.agilent
+Provides-Extra: scopes.redpitaya_scpi
+Provides-Extra: scopes.tektronix
+Provides-Extra: sourcemeasureunit.hp
+Provides-Extra: sourcemeasureunit.keithley
+Provides-Extra: sourcemeasureunit.keysight
+Provides-Extra: spad.id120
+Provides-Extra: spectrometers.bristol
+Provides-Extra: spectrometers.thorlabs_ccs
+Provides-Extra: spectrumanalyzers.rohde_schwarz
+Provides-Extra: tempcontrollers.covesion
+Provides-Extra: tempcontrollers.hcphotonics
+Provides-Extra: lasers.femto_ferb
+Provides-Extra: powermeters.newport
+Provides-Extra: cameras.pco
+Provides-Extra: vacuum.sentorr_mod
+Provides-Extra: wavemeters.burleigh

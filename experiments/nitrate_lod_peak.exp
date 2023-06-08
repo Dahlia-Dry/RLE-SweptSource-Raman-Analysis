@@ -1,0 +1,6 @@
+name: nitrate_lod_250ppm
+concentration: 250
+integration: 100
+repetitions: 10
+wavelengths:
+783.6

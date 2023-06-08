@@ -1,0 +1,29 @@
+name: nitare_water_peak
+concentration: 0
+integration: 10
+repetitions: 25
+wavelengths:
+770.8
+772.0
+772.8
+773.8
+808.2:0.2:810.5
+
+
+(808.5
+808.7
+808.9)
+
+
+laser unstable at 810.9!!!
+
+March 23
+770.8:1:773.9
+808.6:0.25:810.7
+
+
+30s x 16 reps
+no stir
+
+770.8:1:773.9
+809.35:0.25:810.4
