@@ -38,35 +38,19 @@ default_metadata = Metadata()
 init_measurement = dict(zip([ad for ad in params.spad_addresses.keys()],[{} for _ in params.spad_addresses.values()]))
 if params.web_host:
     upload_visibility = 'hidden'
-    demo_visibility = 'visibile'
-    default_integration = 3
-    default_nexp=5
-    default_experiment_name='test'
-    default_concentration=0
-    default_wlstart=800
-    default_wlstop=803
-    default_wlstep=1
-    default_wlpeak=800
+    demo_visibility = 'visible'
 else:
     upload_visibility = 'visible'
     demo_visibility = 'hidden'
-    default_integration=None
-    default_nexp=None
-    default_experiment_name=None
-    default_concentration=None
-    default_wlstart=None
-    default_wlstop=None
-    default_wlstep=None
-    default_wlpeak=None
 #_______________________________________________________________________________
 header=html.Div([
-                html.H1('Swept Source Raman Console',id='page-title',style={'padding':10}),
+                html.H1('Swept Source Raman Data Analysis Console',id='page-title',style={'padding':10}),
                 dbc.Tooltip("For best viewing experience, please set browser zoom to 50%.",placement='bottom',target='page-title',id='page-title-tooltip'),
                 html.A(html.Button([html.I(className="fa fa-github fa-5x"), ""],
                             style={'position':'fixed','right':100,'top':0,
                                     'border':'none','border-radius':12,'font-size':14,
                                     },id='github'),
-                        href="https://github.com/Dahlia-Dry/RLE-Sweptsource-Raman",
+                        href="https://github.com/Dahlia-Dry/RLE-Sweptsource-Raman-Analysis",
                         target='_blank'),
                 dbc.Tooltip("View documentation",target='github',placement='bottom',id='github-tooltip'),
                 html.Button([html.I(className="fa fa-cog fa-5x"), ""],
@@ -76,278 +60,8 @@ header=html.Div([
                                     }),
                 dbc.Tooltip("Open settings",target='open-settings',placement='bottom',id='settings-tooltip')
                 ],)
-wl_sweep = html.Div([
-                    html.Div([dcc.Markdown(children='Integration Time:',style={'padding':10}),
-                            dcc.Input(id='integration'.format('number'),type='number',value=default_integration),
-                            dcc.Markdown(id='nexp-title',children='Number of Exposures/Wavelength:',style={'padding':10}),
-                            dcc.Input(id='nexp'.format('number'),type='number',value=default_nexp)],
-                    className ="d-grid gap-2 d-md-flex",
-                    style={'padding':10}
-                    ),
-                    html.Div([dcc.Checklist(id='toggle_continuous',options=['\t Continuous?'],value=[]),
-                              html.Div(id='continuous', children='False',style={'display':'none'}),
-                              dcc.Markdown(id="exp-reps-title",children='Experiment Repetitions:',style={'padding':10}),
-                            dcc.Input(id='exp-reps'.format('number'),type='number',value=1)],
-                    className ="d-grid gap-2 d-md-flex",
-                    style={'padding':10}
-                    ),
-                    html.Div([
-                    dcc.Markdown(children='$\lambda$ start:',mathjax=True,style={'padding':10}),
-                    dcc.Input(id='wl-start'.format('number'),type='number',value=default_wlstart),
-                    dcc.Markdown(children="=  $cm^{-1}$",id='raman-start',mathjax=True,style={'font-style':"italic"}),
-                    dcc.Markdown(children='$\lambda$ end:',mathjax=True,style={'padding':10}),
-                    dcc.Input(id='wl-end'.format('number'),type='number',value=default_wlstop),
-                    dcc.Markdown(children="=  $cm^{-1}$",id='raman-end',mathjax=True,style={'font-style':"italic"}),
-                    dcc.Markdown(children='$\lambda$:',mathjax=True,style={'padding':10,'display':'none'}),
-                    dcc.Input(id='wl-peak'.format('number'),type='number',style={'display':'none'}),
-                    dcc.Markdown(children="=  $cm^{-1}$",id='raman-peak',mathjax=True,style={'font-style':"italic",'display':'none'}),
-                    dcc.Markdown(children='$\lambda$ step:',mathjax=True,style={'padding':10}),
-                    dcc.Input(id='wl-step'.format('number'),type='number',value=default_wlstep),
-                    html.Button([html.I(className="fa fa-plus"), ""],
-                             id="add-range", n_clicks=0,
-                             style={'font-size':30,
-                                    "margin-left": "15px"}),
-                    dbc.Tooltip("Add wavelength range",target='add-range',placement='top',id='add-range-tooltip'),                
-                    ],
-                    className ="d-grid gap-2 d-md-flex",
-                    style={'padding':10}
-                    ),
-                    html.Div([
-                    dash_table.DataTable(id='wl-ranges',
-                                            columns=[{'name': ['start','stop','step'][i],
-                                                        'id': ['start','stop','step'][i]} for i in range(3)],
-                                            data=[],
-                                            row_deletable=True,
-                                            style_cell={'textAlign': 'center',
-                                                        #'minWidth': '30%', 'width': '30%', 'maxWidth': '30%',
-                                                        },
-                                            style_cell_conditional=[
-                                                {'if': {'column_id': 'start'},
-                                                'width': '30%'}]
-                                        )],style={'width':'1007px'}),])
-peak = html.Div([
-                    html.Div([
-                    dcc.Markdown(children='Integration Time:',style={'padding':10}),
-                    dcc.Input(id='integration'.format('number'),type='number',value=default_integration),
-                    dcc.Markdown(id='nexp-title',children='Number of Exposures:',style={'padding':10}),
-                    dcc.Input(id='nexp'.format('number'),type='number',value=default_nexp),
-                    dcc.Markdown(children='$\lambda$ start:',mathjax=True,style={'padding':10,'display':'none'}),
-                    dcc.Input(id='wl-start'.format('number'),type='number',style={'display':'none'}),
-                    dcc.Markdown(children="=  $cm{^-1}$",mathjax=True,id='raman-start',style={'font-style':"italic",'display':'none'}),
-                    dcc.Markdown(children='$\lambda$ end:',mathjax=True,style={'padding':10,'display':'none'}),
-                    dcc.Input(id='wl-end'.format('number'),type='number',style={'display':'none'}),
-                    dcc.Markdown(children="=  $cm^{-1}$",mathjax=True,id='raman-end',style={'font-style':"italic",'display':'none'}),
-                    dcc.Markdown(children='$\lambda$:',mathjax=True,style={'padding':10}),
-                    dcc.Input(id='wl-peak'.format('number'),type='number',value=default_wlpeak),
-                    dcc.Markdown(children="=  $cm^{-1}$",mathjax=True,id='raman-peak',style={'font-style':"italic"}),
-                    dcc.Markdown(children='$\lambda$ step:',mathjax=True,style={'padding':10,'display':'none'}),
-                    dcc.Input(id='wl-step'.format('number'),type='number',style={'display':'none'}),
-                    html.Button([html.I(className="fa fa-plus"), ""],
-                             id="add-range", n_clicks=0,
-                             style={'font-size':30,
-                                    "margin-left": "15px",
-                                    "display":'none'}),
-                    dbc.Tooltip("Add wavelength range",target='add-range',placement='top',id='add-range-tooltip'),                
-                    ],
-                    className ="d-grid gap-2 d-md-flex",
-                    style={'padding':10}
-                    ),
-                    html.Div([
-                    dash_table.DataTable(id='wl-ranges',
-                                            columns=[],
-                                            data=[],
-                                            row_deletable=True,
-                                            style_cell={'textAlign': 'center',
-                                                        #'minWidth': '30%', 'width': '30%', 'maxWidth': '30%',
-                                                        },
-                                            style_cell_conditional=[
-                                                {'if': {'column_id': 'start'},
-                                                'width': '30%'}]
-                                        )],style={'width':'1007px'}),])
-rolling_avg = html.Div([
-                    html.Div([
-                    dcc.Markdown(children='Integration Time:',style={'padding':10}),
-                    dcc.Input(id='integration'.format('number'),type='number'),
-                    dcc.Markdown(id='nexp-title',children='Repetitions:',style={'padding':10}),
-                    dcc.Input(id='nexp'.format('number'),type='number')],
-                    className ="d-grid gap-2 d-md-flex",
-                    style={'padding':10}
-                    ),
-                    html.Div([
-                    dcc.Markdown(children='$\lambda$ start:',mathjax=True,style={'padding':10,'display':'none'}),
-                    dcc.Input(id='wl-start'.format('number'),type='number',style={'display':'none'}),
-                    dcc.Markdown(children="=  $cm^{-1}$",id='raman-start',mathjax=True,style={'font-style':"italic",'display':'none'}),
-                    dcc.Markdown(children='$\lambda$ end:',mathjax=True,style={'padding':10,'display':'none'}),
-                    dcc.Input(id='wl-end'.format('number'),type='number',style={'display':'none'}),
-                    dcc.Markdown(children="=  $cm^{-1}$",id='raman-end',mathjax=True,style={'font-style':"italic",'display':'none'}),
-                    dcc.Markdown(children='$\lambda$:',mathjax=True,style={'padding':10}),
-                    dcc.Input(id='wl-peak'.format('number'),type='number'),
-                    dcc.Markdown(children="=  $cm^{-1}$",id='raman-peak',mathjax=True,style={'font-style':"italic"}),
-                    dcc.Markdown(children='$\lambda$ step:',mathjax=True,style={'padding':10,'display':'none'}),
-                    dcc.Input(id='wl-step'.format('number'),type='number',style={'display':'none'}),
-                    html.Button([html.I(className="fa fa-plus"), ""],
-                             id="add-range", n_clicks=0,
-                             style={'font-size':30,
-                                    "margin-left": "15px"}),
-                    dbc.Tooltip("Add wavelength range",target='add-range',placement='top',id='add-range-tooltip'),                
-                    ],
-                    className ="d-grid gap-2 d-md-flex",
-                    style={'padding':10}
-                    ),
-                    html.Div([
-                    dash_table.DataTable(id='wl-ranges',
-                                            columns=[{'name': ['label','wavelength','wavenumber'][i],
-                                                        'id': ['label','wavelength','wavenumber'][i]} for i in range(3)],
-                                            data=[],
-                                            row_deletable=True,
-                                            style_cell={'textAlign': 'center',
-                                                        #'minWidth': '30%', 'width': '30%', 'maxWidth': '30%',
-                                                        },
-                                            style_cell_conditional=[
-                                                {'if': {'column_id': 'start'},
-                                                'width': '30%'}]
-                                        )],style={'width':'1007px'}),])
-tab_1= html.Div(children=[
-            dbc.Row([
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle("Settings")),
-                        html.Div([
-                        dcc.Markdown(children="Select Laser: "),
-                        dcc.Dropdown(params.available_lasers,id='selected-laser',value=params.default_laser,style={'width':'60%',"font-weight": "bold", 'display':'inline-block'}),
-                        ]),
-                        html.Div([
-                        dcc.Markdown(children='SPAD Channel Mappings:'),
-                        dash_table.DataTable(id='selected-spads',
-                                             columns=[
-                                            {'id': 'spad address', 'name': 'spad address', 'presentation': 'dropdown'},
-                                            {'id': 'channel number', 'name': 'channel number'}],
-                                            data=[{'spad address':list(params.default_spad_mapping.keys())[i],'channel number':list(params.default_spad_mapping.values())[i]} for i in range(len(params.default_spad_mapping))],
-                                            editable=True,
-                                        )]),
-                        dbc.ModalFooter(
-                            dbc.Button(
-                                "Save and Close",
-                                id="close-settings",
-                                className="ms-auto",
-                                n_clicks=0,
-                            )
-                        ),
-                    ],
-                    id="settings",
-                    size="xl",
-                    is_open=False,
-                    style={'padding':10}),
-                dbc.Col(html.Div([
-                    #CONTROL PANEL
-                    dcc.Markdown(children='## Control Panel',style={'padding':10}),
-                    html.Div([
-                    dcc.Markdown(children='Experiment Name:',style={'padding':10}),
-                    dcc.Input(id='experiment-name'.format('text'),type='text',value=default_experiment_name),
-                    dcc.Markdown(children='Concentration:',style={'padding':10}),
-                    dcc.Input(id='concentration'.format('text'),type='text',value=default_concentration)],
-                    className ="d-grid gap-2 d-md-flex",
-                    style={'padding':10}
-                    ),
-                    #Wavelength Sweep
-                    html.Div([
-                        dcc.Markdown(id="experiment-label",children="### Experiment Type: "),
-                        dcc.Dropdown(['Wavelength Sweep', 'Peak Measurement', 'Rolling Average'], 'Wavelength Sweep',id='experiment-type',style={'width':'60%',"font-weight": "bold", 'display':'inline-block'}),
-                        dbc.Tooltip("toggle experiment type",target='experiment-type',placement='top',id='toggle-type-tooltip')
-                    ],
-                    className ="d-grid gap-2 d-md-flex",
-                    style={'padding':10}),
-                    html.Div(id='measurement-params',children=wl_sweep,style={'display':'block','padding':10},className="d-grid gap-2 d-md-flex"),
-                    html.Div([dbc.Button(children="Connect Instruments",id='connection',n_clicks=0,color='success',outline=False),
-                              dbc.Button(children="Shutdown Instruments",id='shutdown',n_clicks=0,color='danger'),
-                              dbc.Button(children="Begin Measurement",id='measure',n_clicks=0,color='primary',disabled=True),
-                              dbc.Tooltip("",target='measure',placement='bottom'),
-                              dcc.Upload(dbc.Button(children="Load .exp File",n_clicks=0,color='info'),id='preset'),
-                              dbc.Button(children="Pause",id='pause',n_clicks=0,color='warning',outline=False)],
-                              className ="d-grid gap-2 d-md-flex",
-                              style={'padding':10}),
-                    #HIDDEN DATA
-                    html.Div(id='start-trigger',children='False',style={'display': 'none'}),
-                    html.Div(id='collected-spectra',style={'display': 'none'}),
-                    html.Div(id="metajson",style={'display':'none'}),
-                    html.Div(id="current_wl",children="-1",style={'display':'none'}),
-                    html.Div(id="trigger-download",children="False",style={'display':'none'}),
-                    html.Div(id='exposing',children='False',style={'display':'none'}),
-                    html.Div(id='total_exposures',children='0',style={'display':'none'}),
-                    html.Div(id='current_exposures',children='0',style={'display':'none'}),
-                    html.Div(id='prev_exposures',children='0',style={'display':'none'}),
-                    html.Div(id='measured_wavelengths',children='{}',style={'display':'none'}),
-                    html.Div(id='failed_wavelengths',children='[]',style={'display':'none'}),
-                    html.Div(id='state',children='{}',style={'display':'none'}),
-                    html.Div(id='prev_state',children='{}',style={'display':'none'}),
-                    html.Div(id='state_cache',children='{}',style={'display':'none'}),
-                    html.Div(id='rep_count',children='1',style={'display':'none'}),
-                    html.Div(id='measurement_parameters',children='{}',style={'display':'none'}),
-                    html.Div(id='measurement',children=json.dumps(init_measurement),style={'display':'none'}),
-                    html.Div(id='power_measurement',children=json.dumps(init_measurement),style={'display':'none'}),
-                    dbc.Modal(
-                        [
-                            dbc.ModalHeader(dbc.ModalTitle("Measurement Done")),
-                            dbc.ModalBody("",id="modal_body"),
-                            dbc.ModalFooter(
-                                dbc.Button(
-                                    "Close", id="close_modal", className="ms-auto", n_clicks=0
-                                )
-                            ),
-                        ],
-                        id="modal",
-                        is_open=False,),
-                    #STATUS
-                    html.Div([
-                        dcc.Markdown(children='## Status',style={'padding-left':10}),
-                        html.Span(children="Measurement not in progress\n",id='status',style={'padding':10,"color":"grey","font-size":"20px","font-style":"italic","padding-bottom":20})
-                    ]),
-                    #LASER
-                    html.Div([
-                        html.Span("Laser: ",style={'padding':10}),
-                        html.Span(init_laser,id='laser-status', style={"color": "blue","font-weight": "bold"})
-                    ]),
-                    #POWER METER
-                    html.Div([
-                        html.Span("Power Meter: ",style={'padding':10}),
-                        html.Span(init_pm,id='power-status', style={"color": "blue","font-weight": "bold"})
-                    ]),
-                    #SPAD
-                    html.Div([
-                        html.Span("SPAD Channels: \n",style={'padding':10,'white-space': 'pre-line'}),
-                        dcc.Markdown(children=init_spad,id='spad-status', style={"padding":10,"color": "blue","font-weight": "bold"})
-                    ]),
-                    #MEASUREMENT PROGRESS
-                    html.Div([
-                    dcc.Markdown(children='Measurement Progress:'),
-                    dcc.Interval(id="progress-interval", n_intervals=0, interval=params.prog_interval*1000),
-                    dcc.Interval(id="update-interval", n_intervals=0, interval=1000),
-                    dbc.Progress(id="progress"),
-                    ],
-                    style={'padding':10}),
-                    #LOG
-                    html.Div([
-                        dcc.Markdown(children='## Log',style={'padding':10}),
-                        dcc.Markdown(id='data-log',children=datalog,style={"maxHeight": "400px", "overflow": "scroll"})]),
-                ],
-                ),),
-                dbc.Col(html.Div([
-                    dcc.Graph(
-                        id='time_trace',
-                        figure=time_trace,
-                    ),
-                    dcc.Graph(
-                        id='power_meter',
-                        figure=power_meter,
-                    ),
-                    dcc.Graph(
-                        id='data_progress',
-                        figure=data_progress,
-                    )
-                    ]
-                    ),)
-                ],)],style={'height':'50vh'},)
-tab_2= html.Div(children=[
+
+content= html.Div(children=[
             dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle("Settings")),
@@ -512,7 +226,7 @@ tab_2= html.Div(children=[
                                                 vertical=True,
                                                 size=60,
                                                 ),
-                                dbc.Tooltip("toggle raw vs processed data",target='dataprocessing-type',placement='top',id='toggle-type-tooltip'),
+                                dbc.Tooltip("toggle raw vs processed data",target='dataprocessing-type',placement='top',id='toggle-process-tooltip'),
                                 dcc.Markdown("$\lambda$",mathjax=True),
                                 daq.ToggleSwitch(
                                                 id="spectral-units",
