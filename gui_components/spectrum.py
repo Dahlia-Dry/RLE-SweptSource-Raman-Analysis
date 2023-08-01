@@ -452,12 +452,10 @@ def batch_process_uploads(list_of_contents,list_of_names,list_of_dates):
             contentdict[list_of_names[i].split('.')[0]]['spec']=list_of_contents[i]
         elif list_of_names[i].endswith('.power'):
             contentdict[list_of_names[i].split('.')[0]]['power']=list_of_contents[i]
-        else:
-            raise Exception('unrecognized file extension:'+list_of_names[i])
     for key in list(contentdict.keys()):
         print('KEY',key)
-        if None in contentdict[key]:
-            raise Exception(key + 'lacks either a spec file or a power file')
+        if None in contentdict[key].values():
+            continue
         else:
             spec_upload =sweptsource_spec_from_upload(contentdict[key],key)
             spec_upload.meta['filename'] = key

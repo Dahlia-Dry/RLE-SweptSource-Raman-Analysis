@@ -18,27 +18,20 @@ import dash
 from dash import callback_context,no_update,DiskcacheManager
 import pandas as pd
 import numpy as np
-import base64
 import os
 from dash.dependencies import Input,Output,State
 from dash_extensions.enrich import MultiplexerTransform,DashProxy
 from dash.exceptions import PreventUpdate
-import base64
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-import json
 from scipy import stats
-import random
-import sys
 if not params.test_mode:
     from instrumental import Q_
 from ctypes import cdll,c_long, c_ulong, c_uint32,byref,create_string_buffer,c_bool,c_char_p,c_int,c_int16,c_double, sizeof, c_voidp
 from time import sleep
-import datetime
 import zipfile
-from zipfile import ZipFile
-import copy
-import time
+import requests
+
 #_______________________________________________________________________________
 # Define special print function for debugging
 def printv(*args):
@@ -92,49 +85,59 @@ def toggle_settings(n1,n2,isopen):
                 Output('file-list','columns'),
               Output('spectra','children'),
               Output('original-spectra','children'),
+              Output('analytes-dropdown','options'),
               Output('log','children')],
-              [Input('upload-data', 'contents'),
-              Input('datatable-columns','value')],
-              [State('spectra','children'),
-              State('original-spectra','children'),
-              State('upload-data', 'filename'),
-              State('upload-data', 'last_modified')])
-def show_files(list_of_contents, metadata_cols,json_spectra, json_original_spectra, list_of_names, list_of_dates):
+              [Input('url', 'search')],
+              [State('datatable-columns','value')])
+def fetch_data(url_search,metadata_cols):
     return_values = {'file-list_data':no_update,
                      'file-list_selected':no_update,
                      'file-list_style':no_update,
                      'file-list_columns':no_update,
                      'spectra':no_update,
                      'original-spectra':no_update,
+                     'analytes':no_update,
                      'log':no_update}
-    if json_spectra is not None:
-        spectra = spec_from_json(json_spectra)
-        printv('SHOWMETA',spectra[0].meta['integration'],len(spectra[0].ref))
+    try:
+        code = url_search.split("&")[0].split("=")[1].strip()
+        foldername = url_search.split("&")[1].split("=")[1].strip()
+        print(code)
+        print(foldername)
+    except:
+        raise PreventUpdate
+    dropbox_url = f"https://www.dropbox.com/s/{code}/{foldername}?dl=1"
+    spectra=[]
+    original_spectra = []
+    try:
+        response = requests.get(dropbox_url)
+        open('data.zip','wb').write(response.content)
+        with zipfile.ZipFile('data.zip', 'r') as zip_ref:
+            zip_ref.extractall('data')
+        with zipfile.ZipFile('data.zip', 'r') as zip_ref:
+            zip_ref.extractall('data')
+    except Exception as e:
+        print(e)
+        raise PreventUpdate
+    for newspec in batch_process_folder('data'):
+        spectra.append(newspec)
+        original_spectra.append(newspec)
+    if platform == 'darwin':
+        os.system('rm -rf data')
+        os.system('rm data.zip')
     else:
-        spectra=[]
-    if json_original_spectra is not None:
-        original_spectra = spec_from_json(json_original_spectra)
-    else:
-        original_spectra=[]
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        trigger=None
-    else:
-        trigger = ctx.triggered[0]['prop_id'].split('.')[0]
-    printv('Trigger',trigger)
-    if trigger=='upload-data' and list_of_contents != 'null':
-        #gen newly uploaded spectra
-        for newspec in batch_process_uploads(list_of_contents,list_of_names,list_of_dates):
-            spectra.append(newspec)
-            original_spectra.append(newspec)
-    metadata_cols.append('filename')
+        os.system('rmdir data')
+        os.system('rm data.zip')
+    if 'filename' not in metadata_cols:
+        metadata_cols.append('filename')
     if len(spectra)>0:
-        data=[{col:s.meta[col] for col in metadata_cols} for s in spectra]
+        data=[{col:str(s.meta[col]) for col in metadata_cols} for s in spectra]
+        analyte_records = [record for rlist in [s.meta['analytes'] for s in spectra] for record in rlist]
+        analytes = pd.DataFrame.from_records(analyte_records)
         data_cols = ([{'id':p,
                        'name':p,
                        'editable':Metadata().fetch(key=p,trait='editable'),
                        'on_change':{'action':'coerce','failure':'reject'},
-                       'type':Metadata().fetch(key=p,trait='datatype')} for p in metadata_cols if p != 'filename'])
+                       'type':'text'} for p in metadata_cols if p != 'filename'])
         logstr = str(Processlog([s.log for s in spectra]))
         #printv(pd.Series(spectra).to_json(orient='records'))
         style_data_conditional = [
@@ -151,6 +154,7 @@ def show_files(list_of_contents, metadata_cols,json_spectra, json_original_spect
         return_values['file-list_columns'] = data_cols
         return_values['spectra'] = jsonify(spectra)
         return_values['original-spectra'] = jsonify(original_spectra)
+        return_values['analytes'] = list(set(analytes['name']))
         return_values['log'] = logstr
         return tuple(list(return_values.values()))
     else:
@@ -160,6 +164,195 @@ def show_files(list_of_contents, metadata_cols,json_spectra, json_original_spect
         return_values['file-list_selected'] = [x for x in range(len(data))]
         return_values['file-list_columns'] = data_cols
         return tuple(list(return_values.values()))
+    
+@app.callback([Output('file-list', 'data'),
+                Output('file-list','selected_rows'),
+                Output('file-list','style_data_conditional'),
+                Output('file-list','columns'),
+              Output('spectra','children'),
+              Output('original-spectra','children'),
+              Output('analytes-dropdown','options'),
+              Output('log','children')],
+              [Input('upload-data', 'contents')],
+              [State('datatable-columns','value'),
+              State('spectra','children'),
+              State('original-spectra','children'),
+              State('upload-data', 'filename'),
+              State('upload-data', 'last_modified')])
+def show_files(list_of_contents, metadata_cols,json_spectra, json_original_spectra, list_of_names, list_of_dates):
+    return_values = {'file-list_data':no_update,
+                     'file-list_selected':no_update,
+                     'file-list_style':no_update,
+                     'file-list_columns':no_update,
+                     'spectra':no_update,
+                     'original-spectra':no_update,
+                     'analytes':no_update,
+                     'log':no_update}
+    if json_spectra is not None:
+        spectra = spec_from_json(json_spectra)
+        printv('SHOWMETA',spectra[0].meta['integration'],len(spectra[0].ref))
+    else:
+        spectra=[]
+    if json_original_spectra is not None:
+        original_spectra = spec_from_json(json_original_spectra)
+    else:
+        original_spectra=[]
+    if list_of_contents != 'null':
+        #gen newly uploaded spectra
+        for newspec in batch_process_uploads(list_of_contents,list_of_names,list_of_dates):
+            spectra.append(newspec)
+            original_spectra.append(newspec)
+    if 'filename' not in metadata_cols:
+        metadata_cols.append('filename')
+    if len(spectra)>0:
+        data=[{col:str(s.meta[col]) for col in metadata_cols} for s in spectra]
+        analyte_records = [record for rlist in [s.meta['analytes'] for s in spectra] for record in rlist]
+        analytes = pd.DataFrame.from_records(analyte_records)
+        data_cols = ([{'id':p,
+                       'name':p,
+                       'editable':Metadata().fetch(key=p,trait='editable'),
+                       'on_change':{'action':'coerce','failure':'reject'},
+                       'type':'text'} for p in metadata_cols if p != 'filename'])
+        logstr = str(Processlog([s.log for s in spectra]))
+        #printv(pd.Series(spectra).to_json(orient='records'))
+        style_data_conditional = [
+        {
+            'if': {
+                'row_index': i,
+            },
+            'color': colorlist[i]
+        } for i in range(len(data))
+        ]
+        return_values['file-list_data'] = data
+        return_values['file-list_selected'] = [x for x in range(len(data))]
+        return_values['file-list_style'] = style_data_conditional
+        return_values['file-list_columns'] = data_cols
+        return_values['spectra'] = jsonify(spectra)
+        return_values['original-spectra'] = jsonify(original_spectra)
+        return_values['analytes'] = list(set(analytes['name']))
+        return_values['log'] = logstr
+        return tuple(list(return_values.values()))
+    else:
+        data=[{col:None for col in metadata_cols}]
+        data_cols = ([{'id':p,'name':p,'editable':Metadata().fetch(key=p,trait='editable')} for p in metadata_cols if p != 'filename'])
+        return_values['file-list_data'] = data
+        return_values['file-list_selected'] = [x for x in range(len(data))]
+        return_values['file-list_columns'] = data_cols
+        return tuple(list(return_values.values()))
+    
+@app.callback(
+        Input('analytes-dropdown','value'),
+        [Output('file-list', 'data'),
+        Output('file-list','columns'),
+        Output('spectra','children'),
+        Output('original-spectra','children'),
+        Output('datatable-columns','value')],
+        [State('spectra','children'),
+         State('original-spectra','children'),
+         State('datatable-columns','value')]
+)
+def set_target_analyte(selected_analyte,json_spectra,json_original_spectra,metadata_cols):
+    return_values = {'file-list_data':no_update,
+                     'file-list_columns':no_update,
+                     'spectra':no_update,
+                     'original-spectra':no_update,
+                     'meta-cols':no_update}
+    if json_spectra is not None:
+        spectra = spec_from_json(json_spectra)
+    else:
+        raise PreventUpdate
+    if json_original_spectra is not None:
+        original_spectra = spec_from_json(json_original_spectra)
+    else:
+        raise PreventUpdate
+    if 'filename' not in metadata_cols:
+        metadata_cols.append('filename')
+    data_cols = ([{'id':p,
+                       'name':p,
+                       'editable':Metadata().fetch(key=p,trait='editable'),
+                       'on_change':{'action':'coerce','failure':'reject'},
+                       'type':'text'} for p in metadata_cols if p != 'filename']+ 
+                       [{'id':'target_analyte',
+                         'name':'target_analyte',
+                         'editable':True,
+                         'type':'text'}])
+    data = []
+    for i in range(len(spectra)):
+        spec_data = {col:str(spectra[i].meta[col]) for col in metadata_cols}
+        analytes = pd.DataFrame.from_records(spectra[i].meta['analytes'])
+        if len(analytes)==0:
+            spec_data['target_analyte'] = ""
+        else:
+            analytes.index = list(analytes['name'])
+            if selected_analyte in list(analytes['name']):
+                spec_data['target_analyte'] = f"{analytes.loc[selected_analyte]['concentration']} [{analytes.loc[selected_analyte]['units']}]"
+                spectra[i].meta['target_analyte'] = f"{analytes.loc[selected_analyte]['concentration']} [{analytes.loc[selected_analyte]['units']}]"
+                original_spectra[i].meta['target_analyte'] = f"{analytes.loc[selected_analyte]['concentration']} [{analytes.loc[selected_analyte]['units']}]"
+            else:
+                spec_data['target_analyte'] = ""
+                spectra[i].meta['target_analyte'] = ""
+                original_spectra[i].meta['target_analyte'] = ""
+        data.append(spec_data)
+    if 'target_analyte' not in metadata_cols:
+        metadata_cols.append('target_analyte')
+    return_values['file-list_columns'] = data_cols
+    return_values['file-list_data']= data
+    return_values['spectra'] = jsonify(spectra)
+    return_values['original-spectra'] = jsonify(original_spectra)
+    return_values['meta-cols'] =metadata_cols
+    return tuple(list(return_values.values()))
+
+@app.callback(Input('file-list','active_cell'),
+              [Output('viewmeta','is_open'),
+               Output('meta-analytes','data')],
+              [State('spectra','children')]
+)
+def show_analyte_meta(active_cell,json_spectra):
+    if active_cell['column_id'] != 'analytes':
+        raise PreventUpdate
+    if json_spectra is not None:
+        spectra = spec_from_json(json_spectra)
+    else:
+        raise PreventUpdate
+    spectrum = spectra[active_cell['row']]
+    data = spectrum.meta['analytes']
+    return True, data
+
+@app.callback(Input('add-analyte','n_clicks'),
+              [Output('meta-analytes','data')],
+              [State('analyte-name','value'),
+              State('analyte-concentration','value'),
+              State('analyte-units','value'),
+              State('meta-analytes','data')]
+)
+def add_analyte_meta(n,name,concentration,units,data):
+    if not n or all([x is None for x in [name,concentration,units]]): 
+        raise PreventUpdate
+    data.append({'name':name,'concentration':concentration,'units':units})
+    return data
+
+@app.callback(Input('closemeta','n_clicks'),
+              [Output('spectra','children'),
+               Output('file-list','data'),
+               Output('viewmeta','is_open')],
+              [State('file-list','active_cell'),
+               State('spectra','children'),
+               State('meta-analytes','data'),
+               State('datatable-columns','value')])
+def save_analyte_meta(n,active_cell,json_spectra,analyte_data,metadata_cols):
+    print(active_cell['column_id'])
+    if active_cell['column_id'] != 'analytes':
+        raise PreventUpdate
+    if json_spectra is not None:
+        spectra = spec_from_json(json_spectra)
+    else:
+        raise PreventUpdate
+    spectra[active_cell['row']].meta['analytes'] = analyte_data
+    if 'filename' not in metadata_cols:
+        metadata_cols.append('filename')
+    data=[{col:str(s.meta[col]) for col in metadata_cols} for s in spectra]
+    return jsonify(spectra),data,False
+
 
 @app.callback(
     [Output('file-list', 'selected_rows')],
@@ -191,10 +384,11 @@ def revert_to_original(n,json_original_spectra,metadata_cols):
     if json_original_spectra is None:
         raise PreventUpdate
     original_spectra=spec_from_json(json_original_spectra)
-    metadata_cols.append('filename')
+    if 'filename' not in metadata_cols:
+        metadata_cols.append('filename')
     if len(original_spectra)==0:
         raise PreventUpdate
-    data=[{col:s.meta[col] for col in metadata_cols} for s in original_spectra]
+    data=[{col:str(s.meta[col]) for col in metadata_cols} for s in original_spectra]
     logstr = str(Processlog([s.log for s in original_spectra]))
     style_data_conditional = [
     {
@@ -226,8 +420,12 @@ def update_spectra_source(rows,json_spectra,json_original_spectra,previous_rows)
     else:
         raise PreventUpdate
     df = pd.DataFrame(rows)
+    for col in df:
+        df[col] =df[col].astype('str')
     #printv('DF',df)
     dfprev = pd.DataFrame(previous_rows)
+    for col in dfprev:
+        dfprev[col] =dfprev[col].astype('str')
     #printv('PREV',dfprev)
     diffs = pd.concat([df,dfprev]).drop_duplicates(keep=False)
     #printv('DIFFS',diffs)
@@ -247,11 +445,14 @@ def update_spectra_source(rows,json_spectra,json_original_spectra,previous_rows)
             for col in [x for x in diffs.columns if Metadata().fetch(key=x,trait='editable')]:
                 if col=='experiment_name' and not pd.isna(df[col].iloc[i]) and df[col].iloc[i]!='':
                     spectra_dict[filename].log.replace(spectra_dict[filename].meta[col],df[col].iloc[i])
-                if df[col].iloc[i] != dfprev[col].iloc[i] and not pd.isna(df[col].iloc[i]) and df[col].iloc[i]!='':
-                    spectra_dict[filename].meta[col] = df[col].iloc[i]
-    return_values = {'spectra':list(spectra_dict.values()), #remove entires deleted by user from table
+                try:
+                    if df[col].iloc[i] != dfprev[col].iloc[i] and not pd.isna(df[col].iloc[i]) and df[col].iloc[i]!='':
+                        spectra_dict[filename].meta[col] = df[col].iloc[i]
+                except KeyError:
+                    raise PreventUpdate
+    return_values = {'spectra':jsonify(list(spectra_dict.values())), #remove entires deleted by user from table
                      'original-spectra':jsonify(list(original_spectra_dict.values())),
-                     'log':str(Processlog([s.log for s in spectra])),
+                     'log':str(Processlog([s.log for s in list(spectra_dict.values())])),
                      'graphnum':'0'}
     return tuple(list(return_values.values()))
 
@@ -290,21 +491,19 @@ def update_current(json_spectra,graphnum,clickData,ydata_switchval,processing_sw
     printv(g,color)
     if processing_switchval:
         mode='lines+markers'
-        printv('EXPERIMENT TYPE',spectra[g].meta['experiment_type'])
-        if spectra[g].meta['experiment_type'] in ['Peak Measurement', 'peak']:
-            if ydata_switchval:
-                fig = spectra[g].plot_samples(color=color,label='experiment_name')
-            else:
-                fig = spectra[g].plot_samples(color=color,ydata='power',label='experiment_name')
+        # if spectra[g].meta['experiment_type'] in ['Peak Measurement', 'peak']:
+        #     if ydata_switchval:
+        #         fig = spectra[g].plot_samples(color=color,label='experiment_name')
+        #     else:
+        #         fig = spectra[g].plot_samples(color=color,ydata='power',label='experiment_name')
+        if spectral_units:
+            xunits='ramanshift'
         else:
-            if spectral_units:
-                xunits='ramanshift'
-            else:
-                xunits='wavelength'
-            if ydata_switchval:
-                fig = spectra[g].plot(color=color,label='experiment_name',xunits=xunits)
-            else:
-                fig = spectra[g].plot(color=color,label='experiment_name',ydata='power',xunits=xunits)
+            xunits='wavelength'
+        if ydata_switchval:
+            fig = spectra[g].plot(color=color,label='experiment_name',xunits=xunits,show_err=True)
+        else:
+            fig = spectra[g].plot(color=color,label='experiment_name',ydata='power',xunits=xunits,show_err=True)
     else:
         if ydata_switchval:
             fig=spectra[g].plot_raw(color=color,label='experiment_name')
@@ -461,7 +660,8 @@ def toggle_rebin(n1,n2,isopen,selected_rows,rows,json_spectra,new_integration,ne
             if spectra[i].meta['filename'] in df['filename'].to_list():
                 spectra[i] = spectra[i].rebin(new_repetitions,new_integration)
         logstr = str(Processlog([s.log for s in spectra]))
-        metadata_cols.append('filename')
+        if 'filename' not in metadata_cols:
+            metadata_cols.append('filename')
         data=[{col:s.meta[col] for col in metadata_cols} for s in spectra]
         return_values['do_rebin'] = not isopen
         return_values['spectra'] = jsonify(spectra)
@@ -525,7 +725,8 @@ def toggle_remove_samples(n1,n2,isopen,selected_rows,rows,json_spectra,samples_t
             if spectra[i].meta['filename'] in df['filename'].to_list():
                 spectra[i] = spectra[i].remove_samples(samps_to_remove[spectra[i].meta['filename']])
         logstr = str(Processlog([s.log for s in spectra]))
-        metadata_cols.append('filename')
+        if 'filename' not in metadata_cols:
+            metadata_cols.append('filename')
         data=[{col:s.meta[col] for col in metadata_cols} for s in spectra]
         return_values['do_remove_samples'] = not isopen
         return_values['spectra'] = jsonify(spectra)
@@ -587,7 +788,8 @@ def toggle_remove_wavelengths(n1,n2,isopen,selected_rows,rows,json_spectra,wls_t
             if spectra[i].meta['filename'] in df['filename'].to_list():
                 spectra[i] = spectra[i].remove_wavelengths(wls_to_remove[spectra[i].meta['filename']])
         logstr = str(Processlog([s.log for s in spectra]))
-        metadata_cols.append('filename')
+        if 'filename' not in metadata_cols:
+            metadata_cols.append('filename')
         data=[{col:s.meta[col] for col in metadata_cols} for s in spectra]
         return_values['do_remove_wavelengths'] = not isopen
         return_values['spectra'] = jsonify(spectra)
@@ -609,12 +811,14 @@ def do_lod(lod_clicks,clickData,json_spectra):
         return no_update,no_update
     raman = clickData['points'][0]['x']
     max_index = spectra[0].meta['excitation_ramanshifts'].index(raman)
-    try:
-        concentrations = np.array([float(x.meta['concentration']) for x in spectra])
-    except:
-        raise TypeError('all concentration values must be integer or float')
-    #inter-normalize refs/noise
-    #inter_normalize(spectra)
+    concentrations = []
+    for s in spectra:
+        try:
+            concentrations.append(float(s.meta['target_analyte'].split(' ')[0]))
+        except Exception as e:
+            print(e)
+            concentrations.append(0)
+    concentrations = np.array(concentrations)
     refs = np.array([x.ref[max_index] for x in spectra])
     noise = np.array([x.noise[max_index] for x in spectra])
     #np.savetxt('noise.csv',noise,delimiter=',')
@@ -721,7 +925,7 @@ def export_specs(n,selected_rows,rows,json_spectra):
 
 #RUN APP_______________________________________________________________________
 if __name__ == '__main__':
-    if params.test_mode and not params.auto_backup:
+    if params.test_mode:
         app.run_server(debug=True,dev_tools_hot_reload=False)
     else:
         app.run_server(debug=False)

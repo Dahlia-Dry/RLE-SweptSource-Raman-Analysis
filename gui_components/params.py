@@ -11,7 +11,6 @@ verbose = False
 #_______________________________________________________________________________
 
 #CONSOLE PARAMETERS____________________________________________________________
-power_monitoring= True #if False, write null data to .power files
 measurement_delay=2 #delay to make sure readings consistent after wavelength adjustment [s]
 prog_interval=0.5 #interval to check progress [s]
 check_wavelength = True
@@ -61,12 +60,15 @@ low_power_warning = 1.0e-7 #power level in W at which to warn user that power ou
 
 #EDIT METADATA ATTRIBUTES HERE________________________________________________
 meta={
-    #user fields are edited by user
-    'experiment_name': Attribute(None,'text',None,'user',),
-    'concentration': Attribute(None,'numeric','[ppm]','user'),
-    'filename': Attribute(None,'text',None,'user',editable=False),
+    #user fields are entered by user
+    'experiment_name': Attribute(None,'text',None,'experiment',),
+    'analytes': Attribute(None,list, None,'sample'),
+    'target_analyte':Attribute(None,'text', None,'sample'),
+    'medium': Attribute('distilled water','text',None,'experiment',),
+    'notes': Attribute(None,'text',None,'experiment'),
+    'filename': Attribute(None,'text',None,'experiment',editable=False),
     #time fields are set by params and software
-    'starttime': Attribute(None,'datetime',None,'inst',editable=False),
+    'starttime': Attribute(None,'datetime',None,'experiment',editable=False),
     'endtime': Attribute(None,'datetime',None,'inst',editable=False),
     #detector fields 
     'laser':Attribute(default_laser,'text',None,'detector'),
@@ -77,13 +79,12 @@ meta={
     'spad_bias': Attribute(spad_bias,'numeric',None,'detector'),
     'spad_threshold': Attribute(spad_threshold,'numeric',None,'detector'),
     #experiment fields are set by user for experiment
-    'experiment_type':Attribute(None,'text','','experiment'),
     'integration':Attribute(None,'numeric','exposure time [s]','experiment',editable=False),
     'repetitions':Attribute(None,'numeric','number of exposures at each wavelength','experiment',editable=False),
-    'excitation_wavelengths':Attribute(None,list,None,'experiment'),
-    'excitation_ramanshifts':Attribute(None,list,None,'experiment'),
+    'excitation_wavelengths':Attribute(None,list,None,'experiment',editable=False),
+    'excitation_ramanshifts':Attribute(None,list,None,'experiment',editable=False),
     #datafile fields are saved copies of the original data for analysis purposes
-    'data_operations':Attribute(None,'text',None,'datafile'),
-    'spad_datafile':Attribute(None,'text',None,'datafile'),
-    'power_datafile':Attribute(None,'text',None,'datafile')
+    'data_operations':Attribute(None,'text',None,'processing',editable=False),
+    'spad_datafile':Attribute(None,'text',None,'datafile',editable=False),
+    'power_datafile':Attribute(None,'text',None,'datafile',editable=False)
 }
