@@ -104,7 +104,7 @@ def fetch_data(url_search,metadata_cols):
         print(foldername)
     except:
         raise PreventUpdate
-    dropbox_url = f"https://www.dropbox.com/s/{code}/{foldername}?dl=1"
+    dropbox_url = f"https://www.dropbox.com/sh/{code}/{foldername}?dl=1"
     spectra=[]
     original_spectra = []
     try:
