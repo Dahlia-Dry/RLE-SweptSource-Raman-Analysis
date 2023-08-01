@@ -6,7 +6,6 @@ Running this file launches the Dash GUI for Swept Source Raman data collection a
 '''
 #is this sentence here?
 #file imports
-from tkinter import E
 from gui_components.spectrum import *
 from gui_components.gui_layout import *
 import gui_components.params as params
