@@ -144,7 +144,7 @@ def fetch_data(url_search,metadata_cols):
             'if': {
                 'row_index': i,
             },
-            'color': colorlist[i]
+            'color': colorlist[i % len(colorlist)]
         } for i in range(len(data))
         ]
         return_values['file-list_data'] = data
@@ -153,7 +153,10 @@ def fetch_data(url_search,metadata_cols):
         return_values['file-list_columns'] = data_cols
         return_values['spectra'] = jsonify(spectra)
         return_values['original-spectra'] = jsonify(original_spectra)
-        return_values['analytes'] = list(set(analytes['name']))
+        try:
+            return_values['analytes'] = list(set(analytes['name']))
+        except:
+            pass
         return_values['log'] = logstr
         return tuple(list(return_values.values()))
     else:
@@ -219,7 +222,7 @@ def show_files(list_of_contents, metadata_cols,json_spectra, json_original_spect
             'if': {
                 'row_index': i,
             },
-            'color': colorlist[i]
+            'color': colorlist[i% len(colorlist)]
         } for i in range(len(data))
         ]
         return_values['file-list_data'] = data
@@ -228,7 +231,10 @@ def show_files(list_of_contents, metadata_cols,json_spectra, json_original_spect
         return_values['file-list_columns'] = data_cols
         return_values['spectra'] = jsonify(spectra)
         return_values['original-spectra'] = jsonify(original_spectra)
-        return_values['analytes'] = list(set(analytes['name']))
+        try:
+            return_values['analytes'] = list(set(analytes['name']))
+        except:
+            pass
         return_values['log'] = logstr
         return tuple(list(return_values.values()))
     else:
@@ -394,7 +400,7 @@ def revert_to_original(n,json_original_spectra,metadata_cols):
         'if': {
             'row_index': i,
         },
-        'color': colorlist[i]
+        'color': colorlist[i% len(colorlist)]
     } for i in range(len(data))
     ]
     return_values = {'spectra':jsonify(original_spectra),
@@ -486,7 +492,7 @@ def update_current(json_spectra,graphnum,clickData,ydata_switchval,processing_sw
     else:
         return no_update
     g =int(graphnum.strip()) % len(spectra)
-    color=colorlist[g]
+    color=colorlist[g% len(colorlist)]
     printv(g,color)
     if processing_switchval:
         mode='lines+markers'
@@ -532,7 +538,7 @@ def update_working(json_spectra,spec_clicks,clickData,ydata_switchval):
         return no_update
     fig=go.Figure()
     for i in range(len(spectra)):
-        color=colorlist[i]
+        color=colorlist[i % len(colorlist)]
         mode='lines+markers'
         if ydata_switchval:
             fig.add_trace(spectra[i].plot(color=color,label='experiment_name',show_err=True).data[0])
