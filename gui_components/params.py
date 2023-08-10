@@ -63,28 +63,29 @@ meta={
     #user fields are entered by user
     'experiment_name': Attribute(None,'text',None,'experiment',),
     'analytes': Attribute(None,list, None,'sample'),
-    'target_analyte':Attribute(None,'text', None,'sample'),
+    'target_analyte':Attribute(None,'text', None,'sample',editable=False,visible=False),
     'medium': Attribute('distilled water','text',None,'experiment',),
     'notes': Attribute(None,'text',None,'experiment'),
-    'filename': Attribute(None,'text',None,'experiment',editable=False),
+    'filename': Attribute(None,'text',None,'experiment',editable=False,visible=False),
     #time fields are set by params and software
-    'starttime': Attribute(None,'datetime',None,'experiment',editable=False),
+    'starttime': Attribute(None,'datetime',None,'experiment',editable=False,),
     'endtime': Attribute(None,'datetime',None,'inst',editable=False),
     #detector fields 
-    'laser':Attribute(default_laser,'text',None,'detector'),
-    'spad_name': Attribute(None,'text',None,'detector'),
-    'switch_channel': Attribute(None,'text',None,'detector'),
-    'filter_wavelength': Attribute(filter_wl,'numeric',None,'detector'),
-    'spad_integration_time': Attribute(spad_intTime,'numeric',None,'detector'),
-    'spad_bias': Attribute(spad_bias,'numeric',None,'detector'),
-    'spad_threshold': Attribute(spad_threshold,'numeric',None,'detector'),
+    'laser':Attribute(default_laser,'text',None,'detector',editable=True),
+    'spad_name': Attribute(None,'text',None,'detector',editable=True),
+    'switch_channel': Attribute(None,'text',None,'detector',editable=True),
+    'filter_wavelength': Attribute(filter_wl,'numeric',None,'detector',editable=True),
+    'spad_integration_time': Attribute(spad_intTime,'numeric',None,'detector',editable=True),
+    'spad_bias': Attribute(spad_bias,'numeric',None,'detector',editable=True),
+    'spad_threshold': Attribute(spad_threshold,'numeric',None,'detector',editable=True),
     #experiment fields are set by user for experiment
     'integration':Attribute(None,'numeric','exposure time [s]','experiment',editable=False),
     'repetitions':Attribute(None,'numeric','number of exposures at each wavelength','experiment',editable=False),
+    'seq_num':Attribute(1,'numeric','index number if part of time series','experiment',editable=False),
     'excitation_wavelengths':Attribute(None,list,None,'experiment',editable=False),
     'excitation_ramanshifts':Attribute(None,list,None,'experiment',editable=False),
     #datafile fields are saved copies of the original data for analysis purposes
     'data_operations':Attribute(None,'text',None,'processing',editable=False),
-    'spad_datafile':Attribute(None,'text',None,'datafile',editable=False),
-    'power_datafile':Attribute(None,'text',None,'datafile',editable=False)
+    'spad_datafile':Attribute(None,'text',None,'datafile',editable=False,visible=False),
+    'power_datafile':Attribute(None,'text',None,'datafile',editable=False,visible=False)
 }
