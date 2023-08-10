@@ -128,7 +128,16 @@ custom_plot = dcc.Tab(value='custom_plot',label='Custom Plot',
                                 ],className ="d-grid gap-2 d-md-flex",style={'padding':10}),
                               html.Div([dbc.Button("Show Custom Plot",id='do-custom',n_clicks=0,color='success')],
                                         className ="d-grid gap-2 d-md-flex",
-                                        style={'padding':10}),])
+                                        style={'padding':10}),
+                              html.Div([dcc.Markdown('#### Export Plot Data'),],
+                                       className ="d-grid gap-2 d-md-flex",style={'padding':10}),
+                              html.Div([dcc.Markdown('filename:'),
+                                dcc.Input(id='custom-filename',type='text',value='',style={'width':200}),
+                                dcc.Markdown('.csv'),
+                                dbc.Button(html.I(className="fa fa-download"),id='custom-export',n_clicks=0,color='secondary'),
+                                dcc.Download(id='custom-download')],
+                                className ="d-grid gap-2 d-md-flex",
+                                style={'padding':10})])
 
 indiv_plot = dcc.Tab(value='indiv-plot',label='Plot',
                      children = html.Div([
@@ -438,7 +447,7 @@ content= html.Div(children=[
                 dbc.Col([
                      html.H2('Analyze Multiple Spectra',id='multi-spec',style={'padding':10}),
                     dbc.Tooltip("Click within the table to edit metadata of uploaded spectra.",target='multi-spec',placement='bottom',id='multi-tooltip'),
-                    dcc.Tabs(id="multi_plot_tabs", value='combined_spectra', children=[combined_spectra,stats,lod,custom_plot])
+                    dcc.Tabs(id="multi_plot_tabs", value='lod', children=[combined_spectra,stats,lod,custom_plot])
                 ]),
                 dbc.Col([
                     dcc.Graph(

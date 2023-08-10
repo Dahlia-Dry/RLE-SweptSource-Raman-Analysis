@@ -912,7 +912,8 @@ def do_lod(lod_clicks,raman,json_spectra,lod_state):
 @app.callback([Output('working','figure'),
                Output('log','children'),
                Output('do-custom','children'),
-               Output('do-custom','outline')],
+               Output('do-custom','outline'),
+               Output('cached_plot_data','children')],
               [Input('do-custom','n_clicks')],
               [State('target-peak-custom','value'),
                State('x-dropdown','value'),
@@ -945,8 +946,9 @@ def custom_plot(n,raman,xaxis,json_spectra,custom_state):
                                     ),mode='markers'))
         fig.update_layout(xaxis_title = xaxis,
                             yaxis_title = 'SPAD Count',showlegend=False)
+        plot_data = {xaxis:xvals.tolist(),'spad':refs.tolist(),'spad_err':noise.tolist()}
         logstr = Processlog([s.log for s in spectra])
-        return fig,str(logstr),'Clear Custom Plot',True
+        return fig,str(logstr),'Clear Custom Plot',True,json.dumps(plot_data)
     else:
         fig=go.Figure()
         for i in range(len(spectra)):
@@ -1004,13 +1006,18 @@ def show_sdev(n,raman,json_spectra):
 @app.callback(Input('lod-export','n_clicks'),
               [State('lod-filename','value'),
                State('cached_plot_data','children')],
-               [Output('lod-download','data'),
-                Output('save-modal','is_open'),
-               Output('save-body','children')])
+               [Output('lod-download','data')])
 def save_lod(n,filename,cached_data):
     df = pd.DataFrame(json.loads(cached_data))
-    status='STATUS: success'
-    return dcc.send_data_frame(df.to_csv, filename+'.csv'),True,status
+    return dcc.send_data_frame(df.to_csv, filename+'.csv')
+
+@app.callback(Input('custom-export','n_clicks'),
+              [State('custom-filename','value'),
+               State('cached_plot_data','children')],
+               [Output('custom-download','data')])
+def save_lod(n,filename,cached_data):
+    df = pd.DataFrame(json.loads(cached_data))
+    return dcc.send_data_frame(df.to_csv, filename+'.csv')
 
 @app.callback(Input('export','n_clicks'),
               [State('file-list','selected_rows'),
