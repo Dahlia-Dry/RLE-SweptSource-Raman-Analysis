@@ -29,7 +29,7 @@ if web_host:
     working_directory = '"'+os.path.join(os.path.expanduser('~'),'Downloads')+'"'
 else:
     if platform == 'darwin': #Mac
-        working_directory = '"/Users/dahlia/Google Drive/My Drive/Research/UROP-Research Lab of Electronics/sweptsource-data/test_outputs"'
+        working_directory =  '"/Users/dahlia/Projects/RLE/ssr-test-outputs"'
     else:
         working_directory= '"C:/Users/SweptSourceRaman/Dropbox/Ram Lab Raman Data Repository/Dahlia Spectra"' #default path to save data to
 #_______________________________________________________________________________

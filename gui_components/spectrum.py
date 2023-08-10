@@ -389,7 +389,7 @@ class Spectrum(object):
         newmeta['data_operations'] = str(self.log)
         metadict= {self.meta['spad_name']:newmeta}
         self.log.add('saved to zip')
-        zip_data(datadict,powerdict,metadict,working_directory=folder)
+        save_data(datadict,powerdict,metadict,working_directory=folder)
 
 def inter_normalize(spectra):
     avg_powers = [np.mean(s.avg_samples(s.power)) for s in spectra]

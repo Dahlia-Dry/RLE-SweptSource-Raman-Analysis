@@ -844,7 +844,8 @@ def update_target_peak(clickData):
                Output('log','children'),
                Output('do-lod','children'),
                Output('do-lod','outline'),
-               Output('lod-info','children')],
+               Output('lod-info','children'),
+               Output('cached_plot_data','children')],
               [Input('do-lod','n_clicks')],
               [State('target-peak-lod','value'),
                State('spectra','children'),
@@ -879,6 +880,7 @@ def do_lod(lod_clicks,raman,json_spectra,lod_state):
         fig.add_trace(go.Scatter(x=concentrations,y=concentrations*res.slope+res.intercept,mode='lines',
                                 hovertemplate='<i>y = %.5f * x + %.5f</i><br>'%(res.slope,res.intercept)+\
                                                 '<b>R^2 </b>= %.3f' %(res.rvalue**2)))
+        plot_data = {'concentrations':concentrations.tolist(),'spad':refs.tolist(),'spad_err':noise.tolist()}
         printv(sy,res.slope,res.intercept)
         #lod =(3*sy+np.min(refs)-res.intercept)/res.slope
         lod =(3*sy)/res.slope
@@ -894,7 +896,7 @@ def do_lod(lod_clicks,raman,json_spectra,lod_state):
         lod_info ='LOD Concentration for ' + '%.2f' %(raman) + ' Raman Peak is '+ '%.4f' %(lod)+" \[" +units[1:-1]+ "\]"+ buffer
         lod_info += 'y = %.5f * x + %.5f'%(res.slope,res.intercept) + buffer
         lod_info += 'r-squared = ' + str(res.rvalue**2)
-        return fig,str(logstr),'Clear LOD',True,lod_info
+        return fig,str(logstr),'Clear LOD',True,lod_info,json.dumps(plot_data)
     else:
         fig=go.Figure()
         for i in range(len(spectra)):
@@ -905,7 +907,7 @@ def do_lod(lod_clicks,raman,json_spectra,lod_state):
         fig.update_layout(title='Combined Spectra',xaxis_title='Raman Shift (cm^-1)',yaxis_title=yaxis)
         logstr = Processlog([s.log for s in spectra])
         lod_info=""
-        return fig, str(logstr),'Compute LOD',False,lod_info
+        return fig, str(logstr),'Compute LOD',False,lod_info,no_update
 
 @app.callback([Output('working','figure'),
                Output('log','children'),
@@ -999,29 +1001,48 @@ def show_sdev(n,raman,json_spectra):
     return fig
 # ------------------------------------- - ------------------------------------ #
 
+@app.callback(Input('lod-export','n_clicks'),
+              [State('lod-filename','value'),
+               State('lod-save-dir','value'),
+               State('cached_plot_data','children')],
+               [Output('save-modal','is_open'),
+               Output('save-body','children')])
+def save_lod(n,filename,folder,cached_data):
+    df = pd.DataFrame(json.loads(cached_data))
+    try:
+        df.to_csv(os.path.join(folder,filename+'.csv'))
+        status = 'status: SUCCESS'
+    except Exception as e:
+        status = f'status: FAILURE-- {e}'
+    return True,status
+
 @app.callback(Input('export','n_clicks'),
               [State('file-list','selected_rows'),
                 State('file-list','data'),
-                State('spectra','children')],
-              Output('log','children'))
-def export_specs(n,selected_rows,rows,json_spectra):
+                State('spectra','children'),
+                State('save-dir','value')],
+              [Output('log','children'),
+               Output('save-modal','is_open'),
+               Output('save-body','children')])
+def export_specs(n,selected_rows,rows,json_spectra,save_dir):
     if not n or json_spectra is None or selected_rows is None or selected_rows == []:
         return no_update
     spectra = spec_from_json(json_spectra)
     for i in selected_rows:
-        spectra[i].meta['data_operations']=str(spectra[i].log)
-        spectra[i].save(params.working_directory)
+        try:
+            spectra[i].meta['data_operations']=str(spectra[i].log)
+            spectra[i].save('"'+save_dir+'"')
+        except Exception as e:
+            return no_update,True,f'status: FAILURE-- {e}'
     #remove created instances of data in working directory
     if platform == 'darwin':
         os.system('rm -rf *.power')
         os.system('rm -rf *.spad')
-        os.system('rm -rf *.log')
     else:
         os.system('del *.power')
         os.system('del *.spad')
-        os.system('del *.log')
     logstr = str(Processlog([s.log for s in spectra]))
-    return logstr
+    return logstr,True,'status: success'
 
 #RUN APP_______________________________________________________________________
 if __name__ == '__main__':

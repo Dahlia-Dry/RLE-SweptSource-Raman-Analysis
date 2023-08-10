@@ -55,7 +55,17 @@ header=html.Div([
 
 combined_spectra= dcc.Tab(value='combined_spectra',label="Combined Spectra", 
                           children=[
-                              dcc.Markdown('hi')
+                              html.Div([dcc.Markdown('#### Export Plot Data'),],
+                                       className ="d-grid gap-2 d-md-flex",style={'padding':10}),
+                              html.Div([dcc.Markdown('folder:'),
+                                dcc.Input(id='combined-save-dir',type='text',value=params.working_directory[1:-1],style={'width':500})],className ="d-grid gap-2 d-md-flex",
+                                style={'padding':10}),
+                              html.Div([dcc.Markdown('filename:'),
+                                dcc.Input(id='combined-filename',type='text',value='',style={'width':200}),
+                                dcc.Markdown('.csv'),
+                                dbc.Button(html.I(className="fa fa-download"),id='combined-export',n_clicks=0,color='secondary')],
+                                className ="d-grid gap-2 d-md-flex",
+                                style={'padding':10}),
                           ])
 
 lod = dcc.Tab(value='lod',label="Limit of Detection", 
@@ -73,7 +83,18 @@ lod = dcc.Tab(value='lod',label="Limit of Detection",
                               html.Div([dbc.Button("Compute LOD",id='do-lod',n_clicks=0,color='success')],
                                         className ="d-grid gap-2 d-md-flex",
                                         style={'padding':10}),
-                              html.Div([dcc.Markdown("",id='lod-info')],style={'padding':10})
+                              html.Div([dcc.Markdown("",id='lod-info')],style={'padding':10}),
+                              html.Div([dcc.Markdown('#### Export Plot Data'),],
+                                       className ="d-grid gap-2 d-md-flex",style={'padding':10}),
+                              html.Div([dcc.Markdown('folder:'),
+                                dcc.Input(id='lod-save-dir',type='text',value=params.working_directory[1:-1],style={'width':500})],className ="d-grid gap-2 d-md-flex",
+                                style={'padding':10}),
+                              html.Div([dcc.Markdown('filename:'),
+                                dcc.Input(id='lod-filename',type='text',value='',style={'width':200}),
+                                dcc.Markdown('.csv'),
+                                dbc.Button(html.I(className="fa fa-download"),id='lod-export',n_clicks=0,color='secondary')],
+                                className ="d-grid gap-2 d-md-flex",
+                                style={'padding':10}),
                               ],)
 
 stats = dcc.Tab(value='stats',label="Stats",
@@ -151,7 +172,15 @@ content= html.Div(children=[
             html.Div(id='spectra',style={'display': 'none'}),
             html.Div(id='original-spectra',style={'display': 'none'}),
             html.Div(id='graphnum',children='0',style={'display':'none'}),
+            html.Div(id='cached_plot_data',children='',style={'display':'none'}),
             #MODALS
+            dbc.Modal(
+                        [
+                            dbc.ModalHeader(dbc.ModalTitle("Data export done")),
+                            dbc.ModalBody("",id="save-body")
+                        ],
+                        id="save-modal",
+                        is_open=False,),
             dbc.Modal(
                     [
                         dbc.ModalHeader(dbc.ModalTitle("Settings")),
@@ -381,8 +410,12 @@ content= html.Div(children=[
                     className ="d-grid gap-2 d-md-flex",
                     style={'padding':10}),
                     html.Div([dbc.Button("Revert metadata to original",id='revert-meta',n_clicks=0,color='primary'),
-                            dbc.Button("Revert data to original",id='revert-data',n_clicks=0,color='primary'),
-                            dbc.Button("Export Selected",id='export',n_clicks=0,color='secondary')],
+                            dbc.Button("Revert data to original",id='revert-data',n_clicks=0,color='primary')],
+                            className ="d-grid gap-2 d-md-flex",
+                            style={'padding':10}),
+                    html.Div([dcc.Markdown('Export selected to folder:'),
+                            dcc.Input(id='save-dir',type='text',value=params.working_directory[1:-1],style={'width':500}),
+                            dbc.Button(html.I(className="fa fa-download fa-2x"),id='export',n_clicks=0,color='secondary')],
                             className ="d-grid gap-2 d-md-flex",
                             style={'padding':10}),
                     html.Div([dcc.Markdown("### Filter: "),
