@@ -1003,37 +1003,33 @@ def show_sdev(n,raman,json_spectra):
 
 @app.callback(Input('lod-export','n_clicks'),
               [State('lod-filename','value'),
-               State('lod-save-dir','value'),
                State('cached_plot_data','children')],
-               [Output('save-modal','is_open'),
+               [Output('lod-download','data'),
+                Output('save-modal','is_open'),
                Output('save-body','children')])
-def save_lod(n,filename,folder,cached_data):
+def save_lod(n,filename,cached_data):
     df = pd.DataFrame(json.loads(cached_data))
-    try:
-        df.to_csv(os.path.join(folder,filename+'.csv'))
-        status = 'status: SUCCESS'
-    except Exception as e:
-        status = f'status: FAILURE-- {e}'
-    return True,status
+    status='STATUS: success'
+    return dcc.send_data_frame(df.to_csv, filename+'.csv'),True,status
 
 @app.callback(Input('export','n_clicks'),
               [State('file-list','selected_rows'),
                 State('file-list','data'),
                 State('spectra','children'),
-                State('save-dir','value')],
-              [Output('log','children'),
+                State('save-name','value')],
+              [Output('download-specs','data'),
+               Output('log','children'),
                Output('save-modal','is_open'),
                Output('save-body','children')])
-def export_specs(n,selected_rows,rows,json_spectra,save_dir):
+def export_specs(n,selected_rows,rows,json_spectra,save_name):
     if not n or json_spectra is None or selected_rows is None or selected_rows == []:
         return no_update
     spectra = spec_from_json(json_spectra)
-    for i in selected_rows:
-        try:
-            spectra[i].meta['data_operations']=str(spectra[i].log)
-            spectra[i].save('"'+save_dir+'"')
-        except Exception as e:
-            return no_update,True,f'status: FAILURE-- {e}'
+    selected_spectra = [spectra[i] for i in selected_rows]
+    try:
+        zipdata = zip_spectra(save_name,selected_spectra)
+    except Exception as e:
+        return no_update,no_update,True,f'status: FAILURE-- {e}'
     #remove created instances of data in working directory
     if platform == 'darwin':
         os.system('rm -rf *.power')
@@ -1042,7 +1038,7 @@ def export_specs(n,selected_rows,rows,json_spectra,save_dir):
         os.system('del *.power')
         os.system('del *.spad')
     logstr = str(Processlog([s.log for s in spectra]))
-    return logstr,True,'status: success'
+    return dcc.send_file(save_name+'.zip'),logstr,True,'status: success'
 
 #RUN APP_______________________________________________________________________
 if __name__ == '__main__':
