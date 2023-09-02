@@ -117,6 +117,8 @@ def fetch_data(url_search,metadata_cols):
     except Exception as e:
         print(e)
         raise PreventUpdate
+    print(os.listdir())
+    print([x for x in os.listdir('data') if (x[0] != '.' and not x.endswith('.log'))])
     for newspec in batch_process_folder('data'):
         spectra.append(newspec)
         original_spectra.append(newspec)
