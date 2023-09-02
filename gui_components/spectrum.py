@@ -402,10 +402,10 @@ def inter_normalize(spectra):
 def batch_process_folder(dirname,fname=None):
     spec_objs = []
     list_of_names=[x for x in os.listdir(dirname) if ('.' in x and x[0] != '.' and not x.endswith('.log'))]
-    paths = [x.split('.')[0] for x in list_of_names]
     contentdict = {}
     for i in range(len(list_of_names)):
-        contentdict[list_of_names[i].split('.')[0]] = {'spec':None,'power':None}
+        if list_of_names[i].split('.')[0] not in contentdict.keys():
+            contentdict[list_of_names[i].split('.')[0]] = {'spec':None,'power':None}
         if list_of_names[i].endswith('.spad'):
             contentdict[list_of_names[i].split('.')[0]]['spec']=open(os.path.join(dirname,list_of_names[i]))
         elif list_of_names[i].endswith('.power'):
