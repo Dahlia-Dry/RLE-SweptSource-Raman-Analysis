@@ -111,7 +111,7 @@ def fetch_data(url_search,metadata_cols):
         os.system('rm -rf data')
         os.system('rm data.zip')
     else:
-        os.system('rmdir data')
+        os.system('rmdir -r data')
         os.system('rm data.zip')
     try:
         response = requests.get(dropbox_url)
