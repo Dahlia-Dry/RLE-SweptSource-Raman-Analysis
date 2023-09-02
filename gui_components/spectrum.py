@@ -401,7 +401,7 @@ def inter_normalize(spectra):
 
 def batch_process_folder(dirname,fname=None):
     spec_objs = []
-    list_of_names=[x for x in os.listdir(dirname) if (x[0] != '.' and not x.endswith('.log'))]
+    list_of_names=[x for x in os.listdir(dirname) if ('.' in x and x[0] != '.' and not x.endswith('.log'))]
     paths = [x.split('.')[0] for x in list_of_names]
     contentdict = {}
     for i in range(len(list_of_names)):
@@ -413,6 +413,7 @@ def batch_process_folder(dirname,fname=None):
         #else:
             #raise Exception('unrecognized file extension:'+list_of_names[i])
     for key in list(contentdict.keys()):
+        print(key,contentdict[key])
         if None not in contentdict[key].values():
             spec_upload =sweptsource_spec_from_upload(contentdict[key],key,decode=False)
             if fname is not None and spec_upload.meta['experiment_name'] == fname:
