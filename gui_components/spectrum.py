@@ -403,7 +403,7 @@ def batch_process_folder(dirname,fname=None):
     spec_objs = []
     list_of_names=[x for x in os.listdir(dirname) if (x[0] != '.' and not x.endswith('.log'))]
     paths = [x.split('.')[0] for x in list_of_names]
-    contentdict = {key:{'spec':None,'power':None} for key in list(set(paths))}
+    contentdict = {}
     for i in range(len(list_of_names)):
         if list_of_names[i].endswith('.spad'):
             contentdict[list_of_names[i].split('.')[0]]['spec']=open(os.path.join(dirname,list_of_names[i]))
@@ -412,9 +412,7 @@ def batch_process_folder(dirname,fname=None):
         #else:
             #raise Exception('unrecognized file extension:'+list_of_names[i])
     for key in list(contentdict.keys()):
-        if None in contentdict[key]:
-            raise Exception(key + 'lacks either a spec file or a power file')
-        else:
+        if None not in contentdict[key]:
             spec_upload =sweptsource_spec_from_upload(contentdict[key],key,decode=False)
             if fname is not None and spec_upload.meta['experiment_name'] == fname:
                 return spec_upload
