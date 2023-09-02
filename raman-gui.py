@@ -107,6 +107,12 @@ def fetch_data(url_search,metadata_cols):
     dropbox_url = f"https://www.dropbox.com/sh/{code}/{foldername}?dl=1"
     spectra=[]
     original_spectra = []
+    if platform == 'darwin':
+        os.system('rm -rf data')
+        os.system('rm data.zip')
+    else:
+        os.system('rmdir data')
+        os.system('rm data.zip')
     try:
         response = requests.get(dropbox_url)
         open('data.zip','wb').write(response.content)
@@ -122,12 +128,6 @@ def fetch_data(url_search,metadata_cols):
     for newspec in batch_process_folder('data'):
         spectra.append(newspec)
         original_spectra.append(newspec)
-    if platform == 'darwin':
-        os.system('rm -rf data')
-        os.system('rm data.zip')
-    else:
-        os.system('rmdir data')
-        os.system('rm data.zip')
     if len(spectra)>0:
         data=[{col:str(s.meta[col]) for col in metadata_cols} for s in spectra]
         analyte_records = [record for rlist in [s.meta['analytes'] for s in spectra] for record in rlist]
