@@ -166,7 +166,86 @@ def fetch_data(url_search,metadata_cols):
         return_values['file-list_selected'] = [x for x in range(len(data))]
         return_values['file-list_columns'] = data_cols
         return tuple(list(return_values.values()))
-    
+
+@app.callback([Output('file-list', 'data'),
+                Output('file-list','selected_rows'),
+                Output('file-list','style_data_conditional'),
+                Output('file-list','columns'),
+              Output('spectra','children'),
+              Output('original-spectra','children'),
+              Output('analytes-dropdown','options'),
+              Output('log','children')],
+              [Input('load-lod-demo', 'n_clicks'),
+               Input('load-sweep-demo', 'n_clicks'),
+               Input('load-ts-demo', 'n_clicks'),],
+              [State('datatable-columns','value')],
+              prevent_initial_callback=True)
+def load_demo_data(n1,n2,n3, metadata_cols):
+    return_values = {'file-list_data':no_update,
+                     'file-list_selected':no_update,
+                     'file-list_style':no_update,
+                     'file-list_columns':no_update,
+                     'spectra':no_update,
+                     'original-spectra':no_update,
+                     'analytes':no_update,
+                     'log':no_update}
+    ctx = dash.callback_context.triggered[0]
+    ctx_caller = ctx['prop_id']
+    if ctx_caller == 'load-lod-demo.n_clicks':
+        folder= 'demo_data/demo-lod'
+    elif ctx_caller == 'load-sweep-demo.n_clicks':
+        folder= 'demo_data/demo-sweep'
+    elif ctx_caller == 'load-ts-demo.n_clicks':
+        folder= 'demo_data/demo-timeseries' 
+    spectra=[]
+    original_spectra=[]
+    for newspec in batch_process_folder(folder):
+        spectra.append(newspec)
+        original_spectra.append(newspec)
+    if len(spectra)>0:
+        custom_cols = set(spectra[0].meta.fetch_custom())
+        for i in range(len(spectra)):
+            custom_cols=custom_cols.intersection(set(spectra[i].meta.fetch_custom()))
+        for col in custom_cols:
+            metadata_cols.append(col)
+        data=[{col:str(s.meta[col]) for col in metadata_cols} for s in spectra]
+        analyte_records = [record for rlist in [s.meta['analytes'] for s in spectra] for record in rlist]
+        analytes = pd.DataFrame.from_records(analyte_records)
+        data_cols = ([{'id':p,
+                       'name':p,
+                       'editable':spectra[0].meta.fetch(key=p,trait='editable'),
+                       'on_change':{'action':'coerce','failure':'reject'},
+                       'type':'text'} for p in metadata_cols])
+        logstr = str(Processlog([s.log for s in spectra]))
+        #printv(pd.Series(spectra).to_json(orient='records'))
+        style_data_conditional = [
+        {
+            'if': {
+                'row_index': i,
+            },
+            'color': colorlist[i% len(colorlist)]
+        } for i in range(len(data))
+        ]
+        return_values['file-list_data'] = data
+        return_values['file-list_selected'] = [x for x in range(len(data))]
+        return_values['file-list_style'] = style_data_conditional
+        return_values['file-list_columns'] = data_cols
+        return_values['spectra'] = jsonify(spectra)
+        return_values['original-spectra'] = jsonify(original_spectra)
+        try:
+            return_values['analytes'] = list(set(analytes['name']))
+        except:
+            pass
+        return_values['log'] = logstr
+        return tuple(list(return_values.values()))
+    else:
+        data=[{col:None for col in metadata_cols}]
+        data_cols = ([{'id':p,'name':p,'editable':Metadata().fetch(key=p,trait='editable')} for p in metadata_cols])
+        return_values['file-list_data'] = data
+        return_values['file-list_selected'] = [x for x in range(len(data))]
+        return_values['file-list_columns'] = data_cols
+        return tuple(list(return_values.values()))
+
 @app.callback([Output('file-list', 'data'),
                 Output('file-list','selected_rows'),
                 Output('file-list','style_data_conditional'),
@@ -205,12 +284,17 @@ def show_files(list_of_contents, metadata_cols,json_spectra, json_original_spect
             spectra.append(newspec)
             original_spectra.append(newspec)
     if len(spectra)>0:
+        custom_cols = set(spectra[0].meta.fetch_custom())
+        for i in range(len(spectra)):
+            custom_cols=custom_cols.intersection(set(spectra[i].meta.fetch_custom()))
+        for col in custom_cols:
+            metadata_cols.append(col)
         data=[{col:str(s.meta[col]) for col in metadata_cols} for s in spectra]
         analyte_records = [record for rlist in [s.meta['analytes'] for s in spectra] for record in rlist]
         analytes = pd.DataFrame.from_records(analyte_records)
         data_cols = ([{'id':p,
                        'name':p,
-                       'editable':Metadata().fetch(key=p,trait='editable'),
+                       'editable':spectra[0].meta.fetch(key=p,trait='editable'),
                        'on_change':{'action':'coerce','failure':'reject'},
                        'type':'text'} for p in metadata_cols])
         logstr = str(Processlog([s.log for s in spectra]))
@@ -427,6 +511,8 @@ def show_meta(active_cell,json_spectra):
 def add_analyte_meta(n,name,concentration,units,data):
     if not n or all([x is None for x in [name,concentration,units]]): 
         raise PreventUpdate
+    if data is None:
+        data = []
     data.append({'name':name,'concentration':concentration,'units':units})
     return data
 
@@ -455,6 +541,7 @@ def save_analyte_meta(n,active_cell,json_spectra,analyte_data,metadata_cols,name
     spectra[active_cell['row']].meta['medium'] = medium
     for c in custom_fields:
         spectra[active_cell['row']].meta[c['field']] = c['value']
+    spectra[active_cell['row']].meta.clear_custom(exceptions=[c['field'] for c in custom_fields])
     analyte_records = [record for rlist in [s.meta['analytes'] for s in spectra] for record in rlist]
     analytes = pd.DataFrame.from_records(analyte_records)
     try:
@@ -463,7 +550,6 @@ def save_analyte_meta(n,active_cell,json_spectra,analyte_data,metadata_cols,name
         analyte_options=no_update
     data=[{col:str(s.meta[col]) for col in metadata_cols} for s in spectra]
     meta_datatypes = spectra[active_cell['row']].meta.fetch(trait='datatype')
-    print(meta_datatypes)
     x_options =[key for key in meta_datatypes if meta_datatypes[key] == 'numeric']
     return jsonify(spectra),data,x_options,analyte_options,False
 
@@ -1017,7 +1103,7 @@ def save_lod(n,filename,cached_data):
               [State('custom-filename','value'),
                State('cached_plot_data','children')],
                [Output('custom-download','data')])
-def save_lod(n,filename,cached_data):
+def save_custom(n,filename,cached_data):
     df = pd.DataFrame(json.loads(cached_data))
     return dcc.send_data_frame(df.to_csv, filename+'.csv')
 

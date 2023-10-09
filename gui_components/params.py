@@ -19,7 +19,7 @@ check_alignment = False
 alignment_interval = 900 #interval to check laser cavity beam alignment [s]
 auto_backup=True #set to True will periodically write data to destination zip
 autobackup_interval = 3600 #interval to download backup copy of data [s]
-web_host = False #if being hosted on a server other than localhost (heroku)
+web_host = True #if being hosted on a server other than localhost (heroku)
 verbose_log = True
 #_______________________________________________________________________________
 
@@ -62,7 +62,7 @@ low_power_warning = 1.0e-7 #power level in W at which to warn user that power ou
 meta={
     #user fields are entered by user
     'experiment_name': Attribute(None,'text',None,'experiment',),
-    'analytes': Attribute(None,list, None,'sample'),
+    'analytes': Attribute([],list, None,'sample'),
     'target_analyte':Attribute(None,'text', None,'sample',editable=False,visible=False),
     'medium': Attribute('distilled water','text',None,'experiment',),
     'notes': Attribute(None,'text',None,'experiment'),

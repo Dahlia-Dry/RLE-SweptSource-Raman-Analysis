@@ -30,12 +30,22 @@ class Metadata(object):
         try:
             self.data[a].value=v 
         except: #new metadata value
-            raise KeyError('key '+a+ 'not in programmed metadata params. Edit params.py to add this key.')
+            raise KeyError('key '+a+ ' not in programmed metadata params. Edit params.py to add this key.')
     def __getitem__(self,key):
-        if key not in self.data.keys():
-            raise KeyError('key '+key+ 'not in programmed metadata params. Edit params.py to add this key.')
-        else:
-            return self.data[key].value
+        return self.data[key].value
+    def clear_custom(self,exceptions=[]):
+        delkeys = []
+        for key in self.data:
+            if key not in list(params.meta.keys()) and key not in exceptions:
+                delkeys.append(key)
+        for key in delkeys:
+            del self.data[key]
+    def fetch_custom(self):
+        customkeys = []
+        for key in self.data:
+            if key not in list(params.meta.keys()):
+                customkeys.append(key)
+        return customkeys
     def fetch(self,key=None,cat=None,trait='value'):
         if cat is not None:
             if trait == 'value':

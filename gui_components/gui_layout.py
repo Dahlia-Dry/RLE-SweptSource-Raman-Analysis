@@ -25,11 +25,10 @@ datalog = ""
 buffer='      \n'
 default_metadata = Metadata()
 init_measurement = dict(zip([ad for ad in params.spad_addresses.keys()],[{} for _ in params.spad_addresses.values()]))
+upload_visibility = 'visible'
 if params.web_host:
-    upload_visibility = 'hidden'
     demo_visibility = 'visible'
 else:
-    upload_visibility = 'visible'
     demo_visibility = 'hidden'
 
 filters = ['median filter','outlier filter']
@@ -38,6 +37,9 @@ normalizations = ['intra-normalization','inter-normalization']
 header=html.Div([
                 html.H1('Swept Source Raman Data Analysis Console',id='page-title',style={'padding':10}),
                 dbc.Tooltip("For best viewing experience, please set browser zoom to 50%.",placement='bottom',target='page-title',id='page-title-tooltip'),
+                dbc.Button("Load LOD Measurement Demo Data",id='load-lod-demo',n_clicks=0,color='primary',outline=True,style={'visibility':demo_visibility}),
+                dbc.Button("Load Wavelength Sweep Demo Data",id='load-sweep-demo',n_clicks=0,color='primary',outline=True,style={'visibility':demo_visibility}),
+                dbc.Button("Load Timeseries Demo Data",id='load-ts-demo',n_clicks=0,color='primary',outline=True,style={'visibility':demo_visibility}),
                 html.A(html.Button([html.I(className="fa fa-github fa-5x"), ""],
                             style={'position':'fixed','right':100,'top':0,
                                     'border':'none','border-radius':12,'font-size':14,
@@ -376,11 +378,6 @@ content= html.Div(children=[
                 # Allow multiple files to be uploaded
                 multiple=True
             )]),
-            #LOAD DEMO DATA
-            html.Div([dbc.Button("Load Peak Measurement Demo Data",id='load-peak-demo',n_clicks=0,color='primary',outline=True,style={'visibility':demo_visibility}),
-                      dbc.Button("Load Wavelength Sweep Demo Data",id='load-sweep-demo',n_clicks=0,color='primary',outline=True,style={'visibility':demo_visibility})],
-                    className ="d-grid gap-2 d-md-flex",
-                    style={'padding':10,'justify-content':'left'}),
             #METADATA + SPECTRA TABLE
             html.H2('View+Edit Metadata',id='meta-header',style={'padding':10}),
             dbc.Tooltip("Click within the table to edit metadata of uploaded spectra.",target='meta-header',placement='bottom',id='meta-tooltip'),
