@@ -57,3 +57,5 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+#driver files
+drivers/
